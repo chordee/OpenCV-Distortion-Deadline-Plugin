@@ -1,0 +1,70 @@
+[About]
+Type=label
+Label=About
+Category=About Plugin
+Index=0
+Default=OpenCV Distortion Plugin for Deadline.
+
+[State]
+Type=label
+Label=State
+Category=About Plugin
+Index=1
+Default=Created by Gemini CLI
+
+[JsonPath]
+Type=filename
+Label=Calibration JSON Path
+Category=Distortion Settings
+Index=0
+Description=The path to the transforms.json camera calibration file.
+
+[InputFile]
+Type=filename
+Label=Input Image Sequence
+Category=Distortion Settings
+Index=1
+Description=The input image path with padding (e.g. C:\render\shot_01.####.exr).
+
+[OutputDir]
+Type=folder
+Label=Output Directory
+Category=Distortion Settings
+Index=2
+Description=The directory to save the processed images.
+
+[Undistort]
+Type=boolean
+Label=Undistort (Restore)
+Category=Distortion Settings
+Index=3
+Default=true
+Description=If checked, undistorts the image. If unchecked, applies distortion.
+
+[UVCacheDirWindows]
+Type=folder
+Label=UV Cache Dir (Windows)
+Category=UV Configuration
+Index=0
+Description=The path to the UV cache directory on Windows.
+
+[UVPythonInstallDirWindows]
+Type=folder
+Label=Python Install Dir (Windows)
+Category=UV Configuration
+Index=1
+Description=The path to the UV Python installation directory on Windows.
+
+[UVCacheDirLinux]
+Type=string
+Label=UV Cache Dir (Linux)
+Category=UV Configuration
+Index=2
+Description=The path to the UV cache directory on Linux.
+
+[UVPythonInstallDirLinux]
+Type=string
+Label=Python Install Dir (Linux)
+Category=UV Configuration
+Index=3
+Description=The path to the UV Python installation directory on Linux.

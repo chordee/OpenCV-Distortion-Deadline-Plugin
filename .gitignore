@@ -1,0 +1,34 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+ENV/
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Project Output
+output/
+restored_output/
+*.exr
+*.jpg
+*.png
+!deadline_plugin/**/icon.png
+
+# IDE
+.idea/
+.vscode/
+
+# Build and Cache
+.mypy_cache/
+
+# Deadline
+*.job
