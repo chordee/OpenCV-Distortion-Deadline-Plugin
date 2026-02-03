@@ -8,11 +8,19 @@ def submit_to_deadline(args):
     current_dir = os.getcwd()
     
     # 2. Prepare Job Info
+    # Auto-generate comment if not provided or if it's one of the generic defaults
+    comment = args.comment
+    generic_defaults = ["Submitted via Python CLI", "Submitted via GUI"]
+    if not comment or comment in generic_defaults:
+        mode_str = "Undistort" if args.undistort else "Distort"
+        json_name = os.path.basename(args.json_path)
+        comment = f"{mode_str} | JSON: {json_name}"
+
     job_info_file = os.path.join(current_dir, "deadline_job_info.job")
     with open(job_info_file, 'w') as f:
         f.write("Plugin=OpenCVDistortion\n")
         f.write(f"Name={args.job_name}\n")
-        f.write(f"Comment={args.comment}\n")
+        f.write(f"Comment={comment}\n")
         f.write(f"Frames={args.frames}\n")
         f.write(f"ChunkSize={args.chunk_size}\n")
         
@@ -89,17 +97,17 @@ def get_deadline_command():
 def main():
     parser = argparse.ArgumentParser(description="Submit OpenCV Distortion job to Deadline.")
     
-    # Essential Args
-    parser.add_argument("--input", dest="input_pattern", required=True, help="Input file pattern (e.g. C:/shot_01.####.exr)")
-    parser.add_argument("--output", dest="output_dir", required=True, help="Output directory")
-    parser.add_argument("--json", dest="json_path", required=True, help="Path to transforms.json")
-    parser.add_argument("--frames", required=True, help="Frame range (e.g. 1-100)")
+    # Essential Args (MANDATORY: These are written to Plugin Info and cannot be changed in Monitor)
+    parser.add_argument("--input", dest="input_pattern", required=True, help="[REQUIRED] Input file pattern (e.g. C:/shot_01.####.exr). This path is fixed in the job.")
+    parser.add_argument("--output", dest="output_dir", required=True, help="[REQUIRED] Output directory. This path is fixed in the job.")
+    parser.add_argument("--json", dest="json_path", required=True, help="[REQUIRED] Path to transforms.json. This path is fixed in the job.")
+    parser.add_argument("--frames", required=True, help="[REQUIRED] Frame range (e.g. 1-100).")
     
     # Python / Env Args
     # parser.add_argument("--script", ...) # Removed
     
     # Options
-    parser.add_argument("--distort", dest="undistort", action="store_false", help="Enable Distort mode (default is Undistort/Restore)")
+    parser.add_argument("--distort", dest="undistort", action="store_false", help="Enable Distort mode (Reverse). If not set, defaults to Undistort (Restore). This mode is fixed in the job.")
     parser.add_argument("--chunk-size", default=1, help="Number of frames per task")
     parser.add_argument("--job-name", default="OpenCV Distortion Task", help="Name of the job in Deadline")
     parser.add_argument("--comment", default="Submitted via Python CLI", help="Comment")

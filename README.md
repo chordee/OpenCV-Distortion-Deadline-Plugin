@@ -60,6 +60,11 @@
 
 ## 3. 如何提交任務 (Submit Job)
 
+**重要提示**：
+本插件的設計將核心參數（`InputFile`, `OutputDir`, `JsonPath`, `Undistort`）視為提交時的固定參數。
+一旦提交後，這些參數將**直接寫入 Job Plugin Info**，並且**不會**出現在 Deadline Monitor 的「Modify Job Properties -> Plugin」面板中。
+這意味著您無法在作業提交後透過 Monitor 介面修改輸入/輸出路徑或模式。如果參數有誤，請重新提交作業。
+
 本專案提供了一個 `submit_job.py` 命令行工具，讓您可以輕鬆提交任務並指定參數。
 
 ### 基本語法
@@ -70,11 +75,16 @@ python submit_job.py --input <InputPattern> --output <OutputDir> --json <JsonPat
 
 ### 參數說明
 
-*   `--input`: 輸入檔案的路徑，使用 `####` 代表幀號。例如：`Z:/shots/seq01/plate.####.exr`
-*   `--output`: 輸出資料夾。例如：`Z:/shots/seq01/undistorted`
-*   `--json`: 相機參數 JSON 檔路徑。
-*   `--frames`: 幀範圍。例如：`1001-1050`
-*   `--distort`: 如果加上此標籤，將執行 **扭曲 (Distort)** 模式。預設為 **去畸變 (Undistort)**。
+以下參數為**必填**，且提交後不可更改：
+
+*   `--input`: **[必填]** 輸入檔案的路徑，使用 `####` 代表幀號。例如：`Z:/shots/seq01/plate.####.exr`
+*   `--output`: **[必填]** 輸出資料夾。例如：`Z:/shots/seq01/undistorted`
+*   `--json`: **[必填]** 相機參數 JSON 檔路徑。
+*   `--frames`: **[必填]** 幀範圍。例如：`1001-1050`
+*   `--distort`: **[模式選擇]** 如果加上此標籤，將執行 **扭曲 (Distort)** 模式。若不加，預設為 **去畸變 (Undistort)**。
+
+可選參數：
+
 *   `--chunk-size`: 每個 Task 包含的幀數（預設 1）。建議設為 5~10 以利用批次處理優勢，減少重複初始化時間。
 
 ### 範例：提交去畸變任務
