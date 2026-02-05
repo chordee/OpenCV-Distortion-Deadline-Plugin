@@ -111,8 +111,11 @@ class OpenCVDistortionPlugin(DeadlinePlugin):
         return " ".join(arguments)
 
     def HandleProgress(self):
-        # Optional: Parse progress if your script outputs it
-        pass
+        try:
+            progress = float(self.GetRegexMatch(1))
+            self.SetProgress(progress)
+        except:
+            pass
 
     def HandleError(self):
         self.FailRender(self.GetRegexMatch(0))

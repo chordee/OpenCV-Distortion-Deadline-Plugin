@@ -50,46 +50,81 @@ def main():
 
     # 2. Extract Camera Parameters
     try:
-        fl_x = data['fl_x']
-        fl_y = data['fl_y']
-        cx = data['cx']
-        cy = data['cy']
-        w = int(data['w'])
-        h = int(data['h'])
+        fl_x = float(data['fl_x'])
+        fl_y = float(data['fl_y'])
+        cx = float(data['cx'])
+        cy = float(data['cy'])
+        w = int(float(data['w'])) # Handle float strings like "1080.0"
+        h = int(float(data['h']))
         
         # Distortion coefficients
-        k1 = data.get('k1', 0)
-        k2 = data.get('k2', 0)
-        k3 = data.get('k3', 0)
-        k4 = data.get('k4', 0)
-        p1 = data.get('p1', 0)
-        p2 = data.get('p2', 0)
+        k1 = float(data.get('k1', 0))
+        k2 = float(data.get('k2', 0))
+        k3 = float(data.get('k3', 0))
+        k4 = float(data.get('k4', 0))
+        p1 = float(data.get('p1', 0))
+        p2 = float(data.get('p2', 0))
         
         is_fisheye = data.get('is_fisheye', False)
         
-    except KeyError as e:
-        print(f"Error: Missing critical key in JSON data: {e}")
+    except (KeyError, ValueError) as e:
+        print(f"Error: Missing or invalid critical key in JSON data: {e}")
         sys.exit(1)
 
-    # 3. Construct Matrices
+    # 3. Check Resolution & Scale Intrinsics (Based on first frame)
+    first_frame_path = resolve_filename(args.input_pattern, args.start_frame)
+    if os.path.exists(first_frame_path):
+        # Determine read flags automatically
+        read_flags = cv2.IMREAD_COLOR
+        if first_frame_path.lower().endswith('.exr'):
+            read_flags = cv2.IMREAD_UNCHANGED
+            
+        temp_img = cv2.imread(first_frame_path, read_flags)
+        if temp_img is not None:
+            real_h, real_w = temp_img.shape[:2]
+            if real_w != w or real_h != h:
+                print(f"[WARN] Resolution Mismatch Detected!")
+                print(f"       JSON Calibration: {w}x{h}")
+                print(f"       Actual Image:     {real_w}x{real_h}")
+                
+                scale_x = real_w / w
+                scale_y = real_h / h
+                
+                print(f"       -> Scaling intrinsics by X:{scale_x:.4f}, Y:{scale_y:.4f}")
+                
+                fl_x *= scale_x
+                fl_y *= scale_y
+                cx *= scale_x
+                cy *= scale_y
+                w = real_w
+                h = real_h
+            else:
+                print(f"       Resolution matches ({w}x{h}).")
+        else:
+            print(f"[WARN] Could not read first image {first_frame_path} to verify resolution.")
+    else:
+        print(f"[WARN] First image not found at {first_frame_path}. Proceeding with JSON defaults.")
+
+    # 4. Construct Matrices
     # Camera Matrix (K)
     K = np.array([[fl_x, 0, cx],
                   [0, fl_y, cy],
                   [0, 0, 1]], dtype=np.float32)
 
     # Distortion Coefficients (D)
+    # OpenCV order: k1, k2, p1, p2, k3, k4
     D = np.array([k1, k2, p1, p2, k3, k4, 0, 0], dtype=np.float32)
 
     # Hardcoded alpha to keep all pixels
     alpha = 1.0
 
-    print(f"  Resolution: {w}x{h}")
+    print(f"  Final Processing Resolution: {w}x{h}")
     print(f"  Camera Matrix (K):\n{K}")
     print(f"  Distortion Coeffs (D):\n{D}")
     print(f"  Model: {'Fisheye' if is_fisheye else 'Perspective'}")
     print(f"  Mode: {'Restore (Undistorting)' if args.undistort else 'Reverse (Distorting)'}")
 
-    # 4. Pre-calculate Maps
+    # 5. Pre-calculate Maps
     print("Pre-calculating remapping maps...")
     
     if not args.undistort:
@@ -141,17 +176,15 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    # 5. Process Sequence
-    print(f"Processing frames {args.start_frame} to {args.end_frame}...")
+    # 6. Process Sequence
+    total_frames = args.end_frame - args.start_frame + 1
+    print(f"Processing {total_frames} frames ({args.start_frame} to {args.end_frame})...")
     
-    for frame in range(args.start_frame, args.end_frame + 1):
+    for i, frame in enumerate(range(args.start_frame, args.end_frame + 1)):
         input_path = resolve_filename(args.input_pattern, frame)
         
         if not os.path.exists(input_path):
             print(f"Error: Input image not found at {input_path}")
-            # If a frame is missing, we might want to fail the whole chunk or skip. 
-            # In a render farm context, skipping silently can be bad. 
-            # Printing "Error:" allows Deadline to catch it via regex if configured.
             continue
 
         # Determine output filename
@@ -185,6 +218,10 @@ def main():
                 save_params = [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF]
 
         cv2.imwrite(output_path, processed_img, save_params)
+        
+        # Report Progress to Deadline
+        progress = (i + 1) / total_frames * 100
+        print(f"Progress: {progress:.1f}%")
         
     print("Done.")
 
